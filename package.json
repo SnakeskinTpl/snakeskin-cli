@@ -1,0 +1,44 @@
+{
+  "name": "snakeskin-cli",
+  "description": "CLI plugin for Snakeskin.",
+  "license": "MIT",
+  "homepage": "https://github.com/SnakeskinTpl/snakeskin-cli",
+  "main": "index.js",
+  "version": "7.0.0",
+  "author": {
+    "name": "kobezzza",
+    "email": "kobezzza@mail.ru",
+    "url": "https://github.com/kobezzza"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/SnakeskinTpl/snakeskin-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SnakeskinTpl/snakeskin-cli/issues"
+  },
+  "bin": {
+    "snakeskin": "bin/snakeskin.js"
+  },
+  "engines": {
+    "node": ">= 0.10"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 0"
+  },
+  "keywords": [
+    "cli",
+    "snakeskin"
+  ],
+  "dependencies": {
+    "commander": "^2.5.0",
+    "exists-sync": "0.0.3",
+    "js-beautify": "^1.5.4",
+    "mkdirp": "^0.5.1",
+    "monocle": "^1.1.51",
+    "snakeskin": "^7.0.0-beta.35"
+  },
+  "devDependencies": {
+    "jscs": "^3.0.0"
+  }
+}
