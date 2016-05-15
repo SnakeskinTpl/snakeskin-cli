@@ -25,18 +25,18 @@ program
 	.version(Snakeskin.VERSION.join('.'))
 
 	.usage('[options] [dir|file ...]')
-	.option('-p, --params [src]', 'JS object with compile parameters or path')
 
-	.option('-s, --source [src]', 'path to the template file | template directory')
-	.option('-f, --file [src]', 'path to the template file (meta-information)')
-	.option('-m, --mask [mask]', 'mask for template files (RegExp)')
+	.option('-s, --source [src]', 'path to a template file or a template directory')
+	.option('-p, --params [config]', 'object with compile parameters or a path to a config file')
+	.option('-o, --output [src]', 'path to the output file')
 	.option('-w, --watch', 'watch files for changes and automatically recompile')
 
-	.option('-o, --output [src]', 'path to the output file to save')
+	.option('-m, --mask [mask]', 'mask for template files (RegExp)')
 	.option('--extname [ext]', 'file extension for output files (if "output" is a directory)')
+	.option('-f, --file [src]', 'path to a template file (meta information for the debugger)')
 
-	.option('-e, --exec', 'execute the compiled template')
-	.option('-d, --data [src]', 'data object or a path to data')
+	.option('-e, --exec', 'execute compiled templates')
+	.option('-d, --data [src]', 'data object for execution or a path to a data file')
 	.option('-t, --tpl [name]', 'name of the main template')
 
 	.parse(process.argv);

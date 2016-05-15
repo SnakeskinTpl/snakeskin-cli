@@ -1,7 +1,11 @@
 snakeskin-cli
 =============
 
-CLI plugin for Snakeskin.
+CLI plugin for [Snakeskin](https://github.com/SnakeskinTpl/Snakeskin).
+
+[![NPM version](http://img.shields.io/npm/v/snakeskin-cli.svg?style=flat)](http://badge.fury.io/js/snakeskin-cli)
+[![NPM dependencies](http://img.shields.io/david/SnakeskinTpl/snakeskin-cli.svg?style=flat)](https://david-dm.org/SnakeskinTpl/snakeskin-cli)
+[![NPM devDependencies](http://img.shields.io/david/dev/SnakeskinTpl/snakeskin-cli.svg?style=flat)](https://david-dm.org/SnakeskinTpl/snakeskin-cli#info=devDependencies&view=table)
 
 ## Install
 
@@ -21,113 +25,63 @@ snakeskin [options] [dir|file ...]
 -h, --help
 -V, --version
 
--s, --source [src]       путь к файлу или папке шаблонов
--m, --mask [mask]        маска для файлов шаблонов (RegExp)
+-s, --source [src]       path to a template file or a template directory
+-p, --params [config]    object with compile parameters or a path to a config file
+-o, --output [src]       path to the output file
+-w, --watch              watch files for changes and automatically recompile
 
--f, --file [src]         путь к файлу шаблонов (метаинформация для отладчика)
--p, --params [src]       путь к файлу с параметрами для запуска
-                         или сами параметры
+-m, --mask [mask]        mask for template files (RegExp)
+--extname [ext]          file extension for output files (if "output" is a directory)
+-f, --file [src]         path to a template file (meta information for the debugger)
 
--o, --output [src]       путь к файлу или папке для сохранения результата
---extname [ext]          формат сохраняемого файла
-                         (если --output задан папкой)
-
---exports                тип экспорта шаблонов
---render-as              тип рендеринга шаблонов (placeholder, interface)
-
--e, --exec               выполнить скомпилированный шаблон
--d, --data [src]         путь к файлу или папке с данными для запуска
-                         или сами данные
--t, --tpl [name]         имя запускаемого шаблона
-
---disable-localization   отключить поддержку локализации
---i18n-fn                название i18n функции
---language [src]         путь к файлу или папке с данными для локализации
-                         или сами данные
---words [src]            путь к файлу для сохранения найденных фраз
-                         для локализации
-
---auto-replace           включить поддержку макросов
---macros [src]           путь к файлу или папке с макросами или сами макросы
-
---disable-use-strict     отключить режим 'use strict';
---bem-filter             название используемого фильтра для БЭМ
---line-separator         символ новой строки (\n, \r или \r\n)
---tolerate-whitespace    не обрабатывать пробельные символы в шаблонах
---ignore                 пробельные символы для игнорирования
-                         в шаблонах (RegExp)
-
---doctype                тип xml документа (xml, html или false)
---render-mode            режим рендеринга шаблонов (stringConcat,
-                         stringBuffer, dom)
---inline-iterators       инлайнить итераторы forEach и forIn с помощью циклов
-
---disable-replace-undef  отключить базовый фильтр "undef"
---disable-escape-output  отключить базовый фильтр "html"
-
---pretty-print           форматировать вывод
---watch                  автоматически перекомпилировать изменения
+-e, --exec               execute compiled templates
+-d, --data [src]         data object for execution or a path to a data file
+-t, --tpl [name]         name of the main template
 ```
 
-#### Дополнение
+#### Addition
 
-* Если `--output` задан папкой, то результат будет сохранятся по пути:
+* If `--output` is a folder, then the result will be saved by the path:
 
 ```
 --output/%file%(--extname || --exec ? '.html' : '.js')
 ```
 
-* Если `--macros` или `--language` заданы папкой, то данные будут искаться по пути:
+* Parameters `--params language` and `--params words` can be declaring as path to a file.
+* If `--params language` is a folder, then a file will be searched by the path:
 
 ```
 %fileDir%/%fileName%('.js' || '.json')
 ```
 
-* В параметрах `--macros`, `--language`, `--output` можно использовать специальные слова:
+* With parameters `--params language` and `--output` can be used special placeholders:
 
-1. `%fileDir%` — директория исходного файла (абсолютный путь);
-2. `%fileName%` — имя исходного файла (без расширения);
-3. `%file%` — имя исходного файла (с расширением);
-4. `%filePath%` — полный путь к исходному файлу.
+1. `%fileDir%` — directory name of the source file (absolute path);
+2. `%fileName%` — name of the source file without extension;
+3. `%file%` — name the source file with extension;
+4. `%filePath%` — full path to the source file.
 
-* При указании регулярного выражения для `--mask` или `--ignore` необходимо экранировать обратный слеш.
-
-## Примеры
-
-**Компиляция текста с выводом результата в консоль**
+## Examples
+### Compiling a text and output to stdout
 
 ```bash
 snakeskin '{template foo()}hello world{/}'
 ```
 
-Или поверх `stdio`
+**Or**
 
 ```bash
 echo '{template foo()}hello world{/}' | snakeskin
 ```
 
-**Компиляция файла с выводом результата в консоль**
+### Compiling a file with some SS parameters and output to stdout
 
 ```bash
-snakeskin myFile.ss
+snakeskin myFile.ss -p prettyPrint:true,tolerateWhitespaces:true
 ```
 
-**Компиляция папки по маске с сохранением в другую папку**
+### Compiling a folder and save to an another folder by the specified mask
 
 ```bash
 snakeskin ./templates -m '\\.main\\.ss$' -o ./compile
 ```
-
-
-**Компиляция файла для node.js с сохранением**
-
-```bash
-snakeskin myFile.ss -o myFile.ss.js -n
-```
-
-Или поверх `stdio`
-
-```bash
-snakeskin < myFile.ss -n > myFile.ss.js
-```
-
