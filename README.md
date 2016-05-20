@@ -34,6 +34,7 @@ snakeskin [options] [dir|file ...]
 --extname [ext]          file extension for output files (if "output" is a directory)
 -f, --file [src]         path to a template file (meta information for the debugger)
 
+--jsx                    convert templates for using with React
 -e, --exec               execute compiled templates
 -d, --data [src]         data object for execution or a path to a data file
 -t, --tpl [name]         name of the main template

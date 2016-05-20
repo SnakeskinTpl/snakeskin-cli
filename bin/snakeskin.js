@@ -8,10 +8,15 @@
  * https://github.com/SnakeskinTpl/snakeskin-cli/blob/master/LICENSE
  */
 
+require('core-js/es6/object');
 global.Snakeskin = require('snakeskin');
 
 var
+	$C = require('collection.js').$C;
+
+var
 	program = require('commander'),
+	babel = require('babel-core'),
 	beautify = require('js-beautify'),
 	monocle = require('monocle')();
 
@@ -35,6 +40,7 @@ program
 	.option('--extname [ext]', 'file extension for output files (if "output" is a directory)')
 	.option('-f, --file [src]', 'path to a template file (meta information for the debugger)')
 
+	.option('--jsx', 'convert templates for using with React')
 	.option('-e, --exec', 'execute compiled templates')
 	.option('-d, --data [src]', 'data object for execution or a path to a data file')
 	.option('-t, --tpl [name]', 'name of the main template')
@@ -59,10 +65,17 @@ var
 	fMap = {};
 
 var
+	jsx = program['jsx'],
 	exec = program['exec'],
 	tplData = program['data'],
 	mainTpl = program['tpl'],
 	watch = program['watch'];
+
+if (jsx) {
+	params.literalBounds = ['{', '}'];
+	params.renderMode = 'stringConcat';
+	exec = false;
+}
 
 var
 	args = program['args'],
@@ -70,7 +83,8 @@ var
 
 var
 	file = program['source'],
-	out = program['output'];
+	out = program['output'],
+	n = params.eol || '\n';
 
 if (!file && args.length) {
 	input = args.join(' ');
@@ -97,7 +111,7 @@ function action(data, file) {
 		fileName = path.basename(file, path.extname(file));
 	}
 
-	if (tplData || mainTpl || exec) {
+	if (tplData || mainTpl || exec || jsx) {
 		params.context = tpls;
 		params.prettyPrint = false;
 	}
@@ -179,7 +193,7 @@ function action(data, file) {
 				include[file] = include[file] || {};
 				include[file][file] = true;
 
-				includes.forEach(function (key) {
+				$C(includes).forEach(function (key) {
 					include[key] = include[key] || {};
 					include[key][file] = true;
 				});
@@ -211,7 +225,30 @@ function action(data, file) {
 		toConsole = input && !program['output'] || !outFile;
 
 	if (res !== false) {
-		if (execTpl) {
+		var compileJSX = function (tpls, prop) {
+			prop = prop || 'exports';
+			$C(tpls).forEach(function (el, key) {
+				var val = prop + '["' + key.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"]';
+
+				if (typeof el !== 'function') {
+					res += 'if (' + val + ' instanceof Object === false) {' + n + '\t' + val + ' = {};' + n + '}' + n + n;
+					return compileJSX(el, val);
+				}
+
+				var decl = /function .*?\)\s*\{/.exec(el.toString());
+				res += babel.transform(val + ' = ' + decl[0] + ' ' + el(opts.data) + '};', {plugins: [
+					'syntax-jsx',
+					'transform-react-jsx',
+					'transform-react-display-name'
+				]}).code;
+			});
+		};
+
+		if (jsx) {
+			res = '';
+			compileJSX(tpls);
+
+		} else if (execTpl) {
 			var tpl = Snakeskin.getMainTpl(tpls, fileName, mainTpl);
 
 			if (!tpl) {
@@ -273,7 +310,7 @@ function action(data, file) {
 			include[file][file] = true;
 
 			if (tmp) {
-				Object.keys(tmp).forEach(function (key) {
+				$C(tmp).forEach(function (el, key) {
 					include[key] = include[key] || {};
 					include[key][file] = true;
 				});
@@ -314,11 +351,10 @@ if (!file && input == null) {
 		end();
 	}).resume();
 
-	var eol = params.eol || '\n';
 	process.on('SIGINT', function () {
-		stdout.write(eol);
+		stdout.write(n);
 		stdin.emit('end');
-		stdout.write(eol);
+		stdout.write(n);
 		process.exit();
 	});
 
@@ -353,7 +389,7 @@ if (!file && input == null) {
 		var watchFiles = function watchFiles() {
 			var files = [];
 
-			Object.keys(include).forEach(function (key) {
+			$C(include).forEach(function (el, key) {
 				fMap[key] = true;
 				files.push(key);
 			});
@@ -369,7 +405,7 @@ if (!file && input == null) {
 						calls[src] = setTimeout(function () {
 							monocle.unwatchAll();
 
-							Object.keys(files).forEach(function (key) {
+							$C(files).forEach(function (el, key) {
 								if ((!mask || mask.test(key))) {
 									if (exists(key)) {
 										action(fs.readFileSync(key), key);
@@ -397,7 +433,7 @@ if (!file && input == null) {
 
 		if (fs.statSync(file).isDirectory()) {
 			var renderDir = function (dir) {
-				fs.readdirSync(dir).forEach(function (el) {
+				$C(fs.readdirSync(dir)).forEach(function (el) {
 					var src = path.join(dir, el);
 
 					if (fs.statSync(src).isDirectory()) {
