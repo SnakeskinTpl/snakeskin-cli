@@ -225,23 +225,53 @@ function action(data, file) {
 		toConsole = input && !program['output'] || !outFile;
 
 	if (res !== false) {
+		try {
+			var dataObj;
+			if (tplData && tplData !== true) {
+				dataObj = load(tplData);
+			}
+
+		} catch (err) {
+			console.log(new Date().toString());
+			console.error(err.message);
+			res = '';
+
+			if (!watch) {
+				process.exit(1);
+			}
+		}
+
 		var compileJSX = function (tpls, prop) {
-			prop = prop || 'exports';
-			$C(tpls).forEach(function (el, key) {
-				var val = prop + '["' + key.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"]';
+			try {
+				prop = prop || 'exports';
+				$C(tpls).forEach(function (el, key) {
+					var val = prop + '["' + key.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"]';
 
-				if (typeof el !== 'function') {
-					res += 'if (' + val + ' instanceof Object === false) {' + n + '\t' + val + ' = {};' + n + '}' + n + n;
-					return compileJSX(el, val);
+					if (typeof el !== 'function') {
+						res += 'if (' + val + ' instanceof Object === false) {' + n + '\t' + val + ' = {};' + n + '}' + n + n;
+						return compileJSX(el, val);
+					}
+
+					var decl = /function .*?\)\s*\{/.exec(el.toString());
+					res += babel.transform(val + ' = ' + decl[0] + ' ' + el(dataObj) + '};', {
+						babelrc: false,
+						plugins: [
+							require('babel-plugin-syntax-jsx'),
+							require('babel-plugin-transform-react-jsx'),
+							require('babel-plugin-transform-react-display-name')
+						]
+					}).code;
+				});
+
+			} catch (err) {
+				console.log(new Date().toString());
+				console.error(err.message);
+				res = '';
+
+				if (!watch) {
+					process.exit(1);
 				}
-
-				var decl = /function .*?\)\s*\{/.exec(el.toString());
-				res += babel.transform(val + ' = ' + decl[0] + ' ' + el(opts.data) + '};', {plugins: [
-					'syntax-jsx',
-					'transform-react-jsx',
-					'transform-react-display-name'
-				]}).code;
-			});
+			}
 		};
 
 		if (jsx) {
@@ -262,15 +292,7 @@ function action(data, file) {
 
 			} else {
 				try {
-					var
-						dataObj,
-						cache;
-
-					if (tplData && tplData !== true) {
-						dataObj = load(tplData);
-					}
-
-					cache = res = tpl(dataObj);
+					var cache = res = tpl(dataObj);
 
 					if (prettyPrint) {
 						if (toConsole) {
