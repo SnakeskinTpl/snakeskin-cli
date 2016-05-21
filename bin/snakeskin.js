@@ -88,6 +88,7 @@ var
 if (jsx) {
 	p.literalBounds = ['{', '}'];
 	p.renderMode = 'stringConcat';
+	p.doctype = 'strict';
 	exec = false;
 }
 
