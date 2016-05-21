@@ -56,6 +56,7 @@ var p = Object.assign(
 	{
 		module: 'umd',
 		moduleId: 'tpls',
+		useStrict: true,
 		eol: '\n'
 	},
 
@@ -330,7 +331,8 @@ function action(data, file) {
 								''
 						) +
 
-					'})(this, function (exports, React) {';
+					'})(this, function (exports, React) {' +
+						(p.useStrict ? '"use strict";' : '');
 			}
 
 			try {
