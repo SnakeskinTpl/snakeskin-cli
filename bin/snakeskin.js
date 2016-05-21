@@ -314,7 +314,7 @@ function action(data, file) {
 							{cjs: true, umd: true}[mod] ?
 								'if (typeof exports === "object" && typeof module !== "undefined") {' +
 									'factory(exports, typeof React === "undefined" ? require("react") : React);' +
-									'return' +
+									'return;' +
 								'}' :
 								''
 						) +
@@ -323,7 +323,7 @@ function action(data, file) {
 							{amd: true, umd: true}[mod] ?
 								'if (typeof define === "function" && define.amd) {' +
 									'define("' + (p.moduleId) + '", ["exports", "react"], factory);' +
-									'return' +
+									'return;' +
 								'}' :
 								''
 						) +
