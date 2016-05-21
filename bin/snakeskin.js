@@ -300,6 +300,7 @@ function action(data, file) {
 
 			if (mod === 'native') {
 				res +=
+					(p.useStrict ? '"use strict";' : '') +
 					'import React from "react";' +
 					'var exports = {};' +
 					'export default exports;';
