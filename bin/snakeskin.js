@@ -279,7 +279,8 @@ function action(data, file) {
 						'if (' + val + ' instanceof Object === false) {' +
 							val + ' = {};' +
 							(validKey && mod === 'native' ? 'export var ' + key + '=' + val + ';' : '') +
-						'}';
+						'}'
+					;
 
 					return compileJSX(el, val);
 				}
