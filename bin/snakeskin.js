@@ -52,8 +52,15 @@ if (!program['params'] && exists(ssrc)) {
 	program['params'] = ssrc;
 }
 
-var
-	p = Object.assign({module: 'umd', eol: '\n'}, Snakeskin.toObj(program['params']), {debug: {}, cache: false});
+var p = Object.assign(
+	{
+		module: 'umd',
+		moduleId: 'tpls',
+		eol: '\n'
+	},
+
+	Snakeskin.toObj(program['params']), {debug: {}, cache: false}
+);
 
 var
 	prettyPrint = p.prettyPrint,
@@ -209,17 +216,20 @@ function action(data, file) {
 	}
 
 	var res;
+	function fail(err, val) {
+		console.log(new Date().toString());
+		console.error(err.message);
+		res = val;
+		if (!watch) {
+			process.exit(1);
+		}
+	}
+
 	try {
 		res = Snakeskin.compile(String(data), p, {file: file});
 
 	} catch (err) {
-		console.log(new Date().toString());
-		console.error(err.message);
-		res = false;
-
-		if (!watch) {
-			process.exit(1);
-		}
+		fail(err, false);
 	}
 
 	var
@@ -233,13 +243,7 @@ function action(data, file) {
 			}
 
 		} catch (err) {
-			console.log(new Date().toString());
-			console.error(err.message);
-			res = '';
-
-			if (!watch) {
-				process.exit(1);
-			}
+			fail(err, '');
 		}
 
 		var testId = function (id) {
@@ -314,7 +318,7 @@ function action(data, file) {
 						(
 							{amd: true, umd: true}[mod] ?
 								'if (typeof define === "function" && define.amd) {' +
-									'define("' + (p.moduleId || 'tpls') + '", ["exports", "react"], factory);' +
+									'define("' + (p.moduleId) + '", ["exports", "react"], factory);' +
 									'return' +
 								'}' :
 								''
@@ -342,13 +346,7 @@ function action(data, file) {
 				res = res.replace(nRgxp, eol) + eol;
 
 			} catch (err) {
-				console.log(new Date().toString());
-				console.error(err.message);
-				res = '';
-
-				if (!watch) {
-					process.exit(1);
-				}
+				fail(err, '');
 			}
 
 		} else if (execTpl) {
@@ -383,13 +381,7 @@ function action(data, file) {
 					res = res.replace(nRgxp, eol) + eol;
 
 				} catch (err) {
-					console.log(new Date().toString());
-					console.error(err.message);
-					res = '';
-
-					if (!watch) {
-						process.exit(1);
-					}
+					fail(err, '');
 				}
 			}
 		}
