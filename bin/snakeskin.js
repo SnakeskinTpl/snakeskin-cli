@@ -304,7 +304,8 @@ function action(data, file) {
 					useStrict +
 					'import React from "react";' +
 					'var exports = {};' +
-					'export default exports;';
+					'export default exports;'
+				;
 
 			} else {
 				res +=
@@ -334,7 +335,8 @@ function action(data, file) {
 						) +
 
 					'})(this, function (exports, React) {' +
-						useStrict;
+						useStrict
+				;
 			}
 
 			try {
