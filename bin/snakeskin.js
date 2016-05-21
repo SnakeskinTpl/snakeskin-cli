@@ -47,18 +47,23 @@ program
 
 	.parse(process.argv);
 
-var
-	ssrc = path.join(process.cwd(), '.snakeskinrc');
-
+var ssrc = path.join(process.cwd(), '.snakeskinrc');
 if (!program['params'] && exists(ssrc)) {
 	program['params'] = ssrc;
 }
 
 var
-	params = Object.assign({}, Snakeskin.toObj(program['params']), {debug: {}, cache: false}),
-	prettyPrint = params.prettyPrint,
-	language = params.language,
-	words = params.words;
+	p = Object.assign({module: 'umd', eol: '\n'}, Snakeskin.toObj(program['params']), {debug: {}, cache: false});
+
+var
+	prettyPrint = p.prettyPrint,
+	language = p.language,
+	words = p.words;
+
+var
+	mod = p.module,
+	eol = p.eol,
+	nRgxp = /\r?\n|\r/g;
 
 var
 	include = {},
@@ -72,8 +77,8 @@ var
 	watch = program['watch'];
 
 if (jsx) {
-	params.literalBounds = ['{', '}'];
-	params.renderMode = 'stringConcat';
+	p.literalBounds = ['{', '}'];
+	p.renderMode = 'stringConcat';
 	exec = false;
 }
 
@@ -83,8 +88,7 @@ var
 
 var
 	file = program['source'],
-	out = program['output'],
-	n = params.eol || '\n';
+	out = program['output'];
 
 if (!file && args.length) {
 	input = args.join(' ');
@@ -112,8 +116,9 @@ function action(data, file) {
 	}
 
 	if (tplData || mainTpl || exec || jsx) {
-		params.context = tpls;
-		params.prettyPrint = false;
+		p.module = 'cjs';
+		p.context = tpls;
+		p.prettyPrint = false;
 	}
 
 	function pathTpl(src) {
@@ -145,7 +150,7 @@ function action(data, file) {
 	}
 
 	if (language) {
-		params.language = load(language);
+		p.language = load(language);
 	}
 
 	function url(url) {
@@ -179,11 +184,11 @@ function action(data, file) {
 			testDir(outFile);
 		}
 
-		if (file && (!words || exists(words)) && params.cache !== false) {
+		if (file && (!words || exists(words)) && p.cache !== false) {
 			var includes = Snakeskin.check(
 				file,
 				outFile,
-				Snakeskin.compile(null, Object.assign({}, params, {getCacheKey: true})),
+				Snakeskin.compile(null, Object.assign({}, p, {getCacheKey: true})),
 				true
 			);
 
@@ -205,11 +210,7 @@ function action(data, file) {
 
 	var res;
 	try {
-		res = Snakeskin.compile(
-			String(data),
-			params,
-			{file: file}
-		);
+		res = Snakeskin.compile(String(data), p, {file: file});
 
 	} catch (err) {
 		console.log(new Date().toString());
@@ -241,27 +242,104 @@ function action(data, file) {
 			}
 		}
 
-		var compileJSX = function (tpls, prop) {
+		var testId = function (id) {
 			try {
-				prop = prop || 'exports';
-				$C(tpls).forEach(function (el, key) {
-					var val = prop + '["' + key.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"]';
+				var obj = {};
+				eval('obj.' + id + '= true');
+				return true;
 
-					if (typeof el !== 'function') {
-						res += 'if (' + val + ' instanceof Object === false) {' + n + '  ' + val + ' = {};' + n + '}' + n + n;
-						return compileJSX(el, val);
-					}
+			} catch (ignore) {
+				return false;
+			}
+		};
 
-					var decl = /function .*?\)\s*\{/.exec(el.toString());
-					res += babel.transform(val + ' = ' + decl[0] + ' ' + el(dataObj) + '};', {
-						babelrc: false,
-						plugins: [
-							require('babel-plugin-syntax-jsx'),
-							require('babel-plugin-transform-react-jsx'),
-							require('babel-plugin-transform-react-display-name')
-						]
-					}).code;
-				});
+		var compileJSX = function (tpls, prop) {
+			prop = prop || 'exports';
+			$C(tpls).forEach(function (el, key) {
+				var
+					val,
+					validKey = false;
+
+				if (testId(key)) {
+					val = prop + '.' + key;
+					validKey = true;
+
+				} else {
+					val = prop + '["' + key.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"]';
+				}
+
+				if (typeof el !== 'function') {
+					res +=
+						'if (' + val + ' instanceof Object === false) {' +
+							val + ' = {};' +
+							(validKey && mod === 'native' ? 'export var ' + key + '=' + val + ';' : '') +
+						'}';
+
+					return compileJSX(el, val);
+				}
+
+				var decl = /function .*?\)\s*\{/.exec(el.toString());
+				res += babel.transform(val + ' = ' + decl[0] + ' ' + el(dataObj) + '};', {
+					babelrc: false,
+					plugins: [
+						require('babel-plugin-syntax-jsx'),
+						require('babel-plugin-transform-react-jsx'),
+						require('babel-plugin-transform-react-display-name')
+					]
+				}).code;
+			});
+		};
+
+		if (jsx) {
+			res = /\/\*[\s\S]*?\*\//.exec(res)[0];
+
+			if (mod === 'native') {
+				res +=
+					'import React from "react";' +
+					'var exports = {};' +
+					'export default exports;';
+
+			} else {
+				res +=
+					'(function(global, factory) {' +
+						(
+							{cjs: true, umd: true}[mod] ?
+								'if (typeof exports === "object" && typeof module !== "undefined") {' +
+									'factory(exports, typeof React === "undefined" ? require("react") : React);' +
+									'return' +
+								'}' :
+								''
+						) +
+
+						(
+							{amd: true, umd: true}[mod] ?
+								'if (typeof define === "function" && define.amd) {' +
+									'define("' + (p.moduleId || 'tpls') + '", ["exports", "react"], factory);' +
+									'return' +
+								'}' :
+								''
+						) +
+
+						(
+							{global: true, umd: true}[mod] ?
+								'factory(global' + (p.moduleName ? '.' + p.moduleName + '= {}' : '') + ', React);' :
+								''
+						) +
+
+					'})(this, function (exports, React) {';
+			}
+
+			try {
+				compileJSX(tpls);
+				if (mod !== 'native') {
+					res += '});';
+				}
+
+				if (prettyPrint) {
+					res = beautify.js(res);
+				}
+
+				res = res.replace(nRgxp, eol) + eol;
 
 			} catch (err) {
 				console.log(new Date().toString());
@@ -272,11 +350,6 @@ function action(data, file) {
 					process.exit(1);
 				}
 			}
-		};
-
-		if (jsx) {
-			res = '';
-			compileJSX(tpls);
 
 		} else if (execTpl) {
 			var tpl = Snakeskin.getMainTpl(tpls, fileName, mainTpl);
@@ -296,16 +369,18 @@ function action(data, file) {
 
 					if (prettyPrint) {
 						if (toConsole) {
-							res = beautify['html'](res);
+							res = beautify.html(res);
 
 						} else {
-							res = (beautify[path.extname(outFile).replace(/^\./, '')] || beautify['html'])(res);
+							res = (beautify[path.extname(outFile).replace(/^\./, '')] || beautify.html)(res);
 						}
 
 						if (!res || !res.trim()) {
 							res = cache;
 						}
 					}
+
+					res = res.replace(nRgxp, eol) + eol;
 
 				} catch (err) {
 					console.log(new Date().toString());
@@ -326,7 +401,7 @@ function action(data, file) {
 			fs.writeFileSync(outFile, res);
 			success();
 
-			var tmp = params.debug.files;
+			var tmp = p.debug.files;
 
 			include[file] = include[file] || {};
 			include[file][file] = true;
@@ -347,7 +422,7 @@ function action(data, file) {
 function end() {
 	if (words) {
 		testDir(words);
-		fs.writeFileSync(words, JSON.stringify(params.words, null, '\t'));
+		fs.writeFileSync(words, JSON.stringify(p.words, null, '\t'));
 	}
 }
 
@@ -374,9 +449,9 @@ if (!file && input == null) {
 	}).resume();
 
 	process.on('SIGINT', function () {
-		stdout.write(n);
+		stdout.write(eol);
 		stdin.emit('end');
-		stdout.write(n);
+		stdout.write(eol);
 		process.exit();
 	});
 
