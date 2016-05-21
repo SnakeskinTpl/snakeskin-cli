@@ -69,6 +69,7 @@ var
 	words = p.words;
 
 var
+	useStrict = p.useStrict ? '"useStrict";' : '',
 	mod = p.module,
 	eol = p.eol,
 	nRgxp = /\r?\n|\r/g;
@@ -300,7 +301,7 @@ function action(data, file) {
 
 			if (mod === 'native') {
 				res +=
-					(p.useStrict ? '"use strict";' : '') +
+					useStrict +
 					'import React from "react";' +
 					'var exports = {};' +
 					'export default exports;';
@@ -333,7 +334,7 @@ function action(data, file) {
 						) +
 
 					'})(this, function (exports, React) {' +
-						(p.useStrict ? '"use strict";' : '');
+						useStrict;
 			}
 
 			try {
