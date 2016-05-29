@@ -16,7 +16,6 @@ var
 
 var
 	program = require('commander'),
-	babel = require('babel-core'),
 	beautify = require('js-beautify'),
 	monocle = require('monocle')();
 
@@ -52,25 +51,19 @@ if (!program['params'] && exists(ssrc)) {
 	program['params'] = ssrc;
 }
 
-var p = Object.assign(
-	{
-		module: 'umd',
-		moduleId: 'tpls',
-		useStrict: true,
-		eol: '\n'
-	},
-
-	Snakeskin.toObj(program['params']), {debug: {}, cache: false}
-);
+var
+	p = Object.assign({eol: '\n'}, Snakeskin.toObj(program['params']), {debug: {}});
 
 var
 	prettyPrint = p.prettyPrint,
 	language = p.language,
 	words = p.words;
 
+if (typeof words === 'string') {
+	p.words = {};
+}
+
 var
-	useStrict = p.useStrict ? '"useStrict";' : '',
-	mod = p.module,
 	eol = p.eol,
 	nRgxp = /\r?\n|\r/g;
 
@@ -84,13 +77,6 @@ var
 	tplData = program['data'],
 	mainTpl = program['tpl'],
 	watch = program['watch'];
-
-if (jsx) {
-	p.literalBounds = ['{', '}'];
-	p.renderMode = 'stringConcat';
-	p.doctype = 'strict';
-	exec = false;
-}
 
 var
 	args = program['args'],
@@ -115,6 +101,7 @@ var
 
 function action(data, file) {
 	console.time('Time');
+	data = String(data);
 	file = file || program['file'] || '';
 
 	var
@@ -125,7 +112,7 @@ function action(data, file) {
 		fileName = path.basename(file, path.extname(file));
 	}
 
-	if (tplData || mainTpl || exec || jsx) {
+	if (tplData || mainTpl || exec) {
 		p.module = 'cjs';
 		p.context = tpls;
 		p.prettyPrint = false;
@@ -159,7 +146,7 @@ function action(data, file) {
 		});
 	}
 
-	if (language) {
+	if (typeof language === 'string') {
 		p.language = load(language);
 	}
 
@@ -218,163 +205,35 @@ function action(data, file) {
 		}
 	}
 
-	var res;
-	function fail(err, val) {
-		console.log(new Date().toString());
-		console.error(err.message);
-		res = val;
-		if (!watch) {
-			process.exit(1);
-		}
-	}
+	var
+		toConsole = input && !program['output'] || !outFile,
+		res;
 
 	try {
-		res = Snakeskin.compile(String(data), p, {file: file});
-
-	} catch (err) {
-		fail(err, false);
-	}
-
-	var
-		toConsole = input && !program['output'] || !outFile;
-
-	if (res !== false) {
-		try {
-			var dataObj;
-			if (tplData && tplData !== true) {
-				dataObj = load(tplData);
-			}
-
-		} catch (err) {
-			fail(err, '');
+		var dataObj;
+		if (tplData && tplData !== true) {
+			p.data = dataObj = load(tplData);
 		}
 
-		var testId = function (id) {
-			try {
-				var obj = {};
-				eval('obj.' + id + '= true');
-				return true;
+		if (jsx) {
+			res = Snakeskin.compileAsJSX(data, p, {file: file});
 
-			} catch (ignore) {
-				return false;
-			}
-		};
+		} else {
+			res = Snakeskin.compile(data, p, {file: file});
 
-		var compileJSX = function (tpls, prop) {
-			prop = prop || 'exports';
-			$C(tpls).forEach(function (el, key) {
-				var
-					val,
-					validKey = false;
+			if (res && execTpl) {
+				var tpl = Snakeskin.getMainTpl(tpls, fileName, mainTpl);
 
-				if (testId(key)) {
-					val = prop + '.' + key;
-					validKey = true;
+				if (!tpl) {
+					console.log(new Date().toString());
+					console.error('Template to run is not defined');
+					res = '';
+
+					if (!watch) {
+						process.exit(1);
+					}
 
 				} else {
-					val = prop + '["' + key.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"]';
-				}
-
-				if (typeof el !== 'function') {
-					res +=
-						'if (' + val + ' instanceof Object === false) {' +
-							val + ' = {};' +
-							(validKey && mod === 'native' ? 'export var ' + key + '=' + val + ';' : '') +
-						'}'
-					;
-
-					return compileJSX(el, val);
-				}
-
-				var
-					decl = /function .*?\)\s*\{/.exec(el.toString()),
-					text = el(dataObj);
-
-				text = val + ' = ' + decl[0] + (/\breturn\s+\(?\s*[{<](?!\/)/.test(text) ? '' : 'return ') + text + '};';
-				res += babel.transform(text, {
-					babelrc: false,
-					plugins: [
-						require('babel-plugin-syntax-jsx'),
-						require('babel-plugin-transform-react-jsx'),
-						require('babel-plugin-transform-react-display-name')
-					]
-				}).code;
-			});
-		};
-
-		if (jsx) {
-			res = /\/\*[\s\S]*?\*\//.exec(res)[0];
-
-			if (mod === 'native') {
-				res +=
-					useStrict +
-					'import React from "react";' +
-					'var exports = {};' +
-					'export default exports;'
-				;
-
-			} else {
-				res +=
-					'(function(global, factory) {' +
-						(
-							{cjs: true, umd: true}[mod] ?
-								'if (typeof exports === "object" && typeof module !== "undefined") {' +
-									'factory(exports, typeof React === "undefined" ? require("react") : React);' +
-									'return;' +
-								'}' :
-								''
-						) +
-
-						(
-							{amd: true, umd: true}[mod] ?
-								'if (typeof define === "function" && define.amd) {' +
-									'define("' + (p.moduleId) + '", ["exports", "react"], factory);' +
-									'return;' +
-								'}' :
-								''
-						) +
-
-						(
-							{global: true, umd: true}[mod] ?
-								'factory(global' + (p.moduleName ? '.' + p.moduleName + '= {}' : '') + ', React);' :
-								''
-						) +
-
-					'})(this, function (exports, React) {' +
-						useStrict
-				;
-			}
-
-			try {
-				compileJSX(tpls);
-				if (mod !== 'native') {
-					res += '});';
-				}
-
-				if (prettyPrint) {
-					res = beautify.js(res);
-				}
-
-				res = res.replace(nRgxp, eol) + eol;
-
-			} catch (err) {
-				fail(err, '');
-			}
-
-		} else if (execTpl) {
-			var tpl = Snakeskin.getMainTpl(tpls, fileName, mainTpl);
-
-			if (!tpl) {
-				console.log(new Date().toString());
-				console.error('Template to run is not defined');
-				res = '';
-
-				if (!watch) {
-					process.exit(1);
-				}
-
-			} else {
-				try {
 					var cache = res = tpl(dataObj);
 
 					if (prettyPrint) {
@@ -391,13 +250,20 @@ function action(data, file) {
 					}
 
 					res = res.replace(nRgxp, eol) + eol;
-
-				} catch (err) {
-					fail(err, '');
 				}
 			}
 		}
 
+	} catch (err) {
+		console.log(new Date().toString());
+		console.error('Error: ' + err.message);
+		res = false;
+		if (!watch) {
+			process.exit(1);
+		}
+	}
+
+	if (typeof res === 'string') {
 		if (toConsole) {
 			console.log(res);
 
@@ -417,16 +283,13 @@ function action(data, file) {
 				});
 			}
 		}
-
-	} else if (!watch) {
-		process.exit(1);
 	}
 }
 
 function end() {
 	if (words) {
 		testDir(words);
-		fs.writeFileSync(words, JSON.stringify(p.words, null, '\t'));
+		fs.writeFileSync(words, JSON.stringify(p.words, null, '  '));
 	}
 }
 
