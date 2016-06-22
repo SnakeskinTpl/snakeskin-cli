@@ -87,3 +87,7 @@ snakeskin myFile.ss -p prettyPrint:true,tolerateWhitespaces:true
 ```bash
 snakeskin ./templates -m '\\.main\\.ss$' -o ./compile
 ```
+
+## [License](https://github.com/SnakeskinTpl/snakeskin-cli/blob/master/LICENSE)
+
+The MIT License.
