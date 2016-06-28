@@ -39,7 +39,10 @@ program
 	.option('--extname [ext]', 'file extension for output files (if "output" is a directory)')
 	.option('-f, --file [src]', 'path to a template file (meta information for the debugger)')
 
-	.option('--jsx', 'convert templates for using with React')
+	.option('--jsx')
+	.option('-a, --adapter [name]', 'name of an adaptor, for example: ss2react or ss2vue')
+	.option('--adapterOptions [config]', 'object with adaptor parameters or a path to a config file')
+
 	.option('-e, --exec', 'execute compiled templates')
 	.option('-d, --data [src]', 'data object for execution or a path to a data file')
 	.option('-t, --tpl [name]', 'name of the main template')
@@ -73,6 +76,10 @@ var
 
 var
 	jsx = program['jsx'],
+	adapter = program['adapter'],
+	adapterOptions = Snakeskin.toObj(program['adapterOptions']) || {};
+
+var
 	exec = program['exec'],
 	tplData = program['data'],
 	mainTpl = program['tpl'],
@@ -106,7 +113,8 @@ function action(data, file) {
 
 	var
 		tpls = {},
-		fileName = '';
+		fileName = '',
+		info = {file: file};
 
 	if (file) {
 		fileName = path.basename(file, path.extname(file));
@@ -205,9 +213,40 @@ function action(data, file) {
 		}
 	}
 
-	var
-		toConsole = input && !program['output'] || !outFile,
-		res;
+	function cb(err, res) {
+		if (err) {
+			console.log(new Date().toString());
+			console.error('Error: ' + err.message);
+			res = false;
+			if (!watch) {
+				process.exit(1);
+			}
+		}
+
+		if (typeof res === 'string') {
+			if (toConsole) {
+				console.log(res);
+
+			} else {
+				fs.writeFileSync(outFile, res);
+				success();
+
+				var tmp = p.debug.files;
+
+				include[file] = include[file] || {};
+				include[file][file] = true;
+
+				if (tmp) {
+					$C(tmp).forEach(function (el, key) {
+						include[key] = include[key] || {};
+						include[key][file] = true;
+					});
+				}
+			}
+		}
+	}
+
+	var toConsole = input && !program['output'] || !outFile;
 
 	try {
 		var dataObj;
@@ -215,74 +254,64 @@ function action(data, file) {
 			p.data = dataObj = load(tplData);
 		}
 
-		if (jsx) {
-			res = Snakeskin.compileAsJSX(data, p, {file: file});
+		if (jsx || adapter) {
+			return require(jsx ? 'ss2react' : adapter).adapter(data, p, info).then(
+				function (res) {
+					cb(null, res);
+				},
 
-		} else {
-			res = Snakeskin.compile(data, p, {file: file});
-
-			if (res && execTpl) {
-				var tpl = Snakeskin.getMainTpl(tpls, fileName, mainTpl);
-
-				if (!tpl) {
-					console.log(new Date().toString());
-					console.error('Template to run is not defined');
-					res = '';
-
-					if (!watch) {
-						process.exit(1);
-					}
-
-				} else {
-					var cache = res = tpl(dataObj);
-
-					if (prettyPrint) {
-						if (toConsole) {
-							res = beautify.html(res);
-
-						} else {
-							res = (beautify[path.extname(outFile).replace(/^\./, '')] || beautify.html)(res);
-						}
-
-						if (!res || !res.trim()) {
-							res = cache;
-						}
-					}
-
-					res = res.replace(nRgxp, eol) + eol;
+				function (err) {
+					cb(err);
 				}
+			);
+		}
+
+		var res = Snakeskin.compile(data, p, info);
+
+		if (res && execTpl) {
+			var tpl = Snakeskin.getMainTpl(tpls, fileName, mainTpl);
+
+			if (!tpl) {
+				console.log(new Date().toString());
+				console.error('Template to run is not defined');
+				res = '';
+
+				if (!watch) {
+					process.exit(1);
+				}
+
+			} else {
+				return Snakeskin.execTpl(tpl, dataObj).then(
+					function (res) {
+						var cache = res;
+
+						if (prettyPrint) {
+							if (toConsole) {
+								res = beautify.html(res);
+
+							} else {
+								res = (beautify[path.extname(outFile).replace(/^\./, '')] || beautify.html)(res);
+							}
+
+							if (!res || !res.trim()) {
+								res = cache;
+							}
+						}
+
+						cb(null, res.replace(nRgxp, eol) + eol);
+					},
+
+					function (err) {
+						cb(err);
+					}
+				);
 			}
 		}
+
+		cb(null, res);
 
 	} catch (err) {
-		console.log(new Date().toString());
-		console.error('Error: ' + err.message);
-		res = false;
-		if (!watch) {
-			process.exit(1);
-		}
-	}
-
-	if (typeof res === 'string') {
-		if (toConsole) {
-			console.log(res);
-
-		} else {
-			fs.writeFileSync(outFile, res);
-			success();
-
-			var tmp = p.debug.files;
-
-			include[file] = include[file] || {};
-			include[file][file] = true;
-
-			if (tmp) {
-				$C(tmp).forEach(function (el, key) {
-					include[key] = include[key] || {};
-					include[key][file] = true;
-				});
-			}
-		}
+		cb(err);
 	}
 }
 

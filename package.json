@@ -4,7 +4,7 @@
   "license": "MIT",
   "homepage": "https://github.com/SnakeskinTpl/snakeskin-cli",
   "main": "index.js",
-  "version": "7.1.5",
+  "version": "7.2.0",
   "author": {
     "name": "kobezzza",
     "email": "kobezzza@mail.ru",
@@ -38,9 +38,9 @@
     "js-beautify": "^1.5.4",
     "mkdirp": "^0.5.1",
     "monocle": "^1.1.51",
-    "snakeskin": "^7.0.10"
+    "snakeskin": "^7.1.9"
   },
   "devDependencies": {
-    "jscs": "^3.0.0"
+    "eslint": "^2.13.1"
   }
 }
