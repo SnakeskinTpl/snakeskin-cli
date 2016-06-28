@@ -260,9 +260,7 @@ function action(data, file) {
 					cb(null, res);
 				},
 
-				function (err) {
-					cb(err);
-				}
+				cb
 			);
 		}
 
@@ -301,9 +299,7 @@ function action(data, file) {
 						cb(null, res.replace(nRgxp, eol) + eol);
 					},
 
-					function (err) {
-						cb(err);
-					}
+					cb
 				);
 			}
 		}
