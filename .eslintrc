@@ -64,7 +64,6 @@
     "no-shadow-restricted-names": ["error"],
     "no-undef-init": ["error"],
     "no-unused-vars": ["error", {"vars": "all", "args": "none", "varsIgnorePattern": "[iI]gnored?"}],
-    "no-use-before-define": ["error", {"functions": false}],
 
     /* [Node.js and CommonJS] */
     "no-new-require": ["error"],

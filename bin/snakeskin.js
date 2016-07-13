@@ -8,11 +8,11 @@
  * https://github.com/SnakeskinTpl/snakeskin-cli/blob/master/LICENSE
  */
 
-require('core-js/es6/object');
+require('core-js');
 global.Snakeskin = require('snakeskin');
 
 var
-	$C = require('collection.js').$C;
+	$C = require('collection.js/compiled');
 
 var
 	program = require('commander'),
@@ -255,7 +255,7 @@ function action(data, file) {
 		}
 
 		if (jsx || adapter) {
-			return require(jsx ? 'ss2react' : adapter).adapter(data, p, info).then(
+			return require(jsx ? 'ss2react' : adapter).adapter(data, Object.assign({adapterOptions: adapterOptions}, p), info).then(
 				function (res) {
 					cb(null, res);
 				},
@@ -395,7 +395,7 @@ if (!file && input == null) {
 							monocle.unwatchAll();
 
 							$C(files).forEach(function (el, key) {
-								if ((!mask || mask.test(key))) {
+								if (!mask || mask.test(key)) {
 									if (exists(key)) {
 										action(fs.readFileSync(key), key);
 
