@@ -6,7 +6,7 @@ CLI plugin for [Snakeskin](https://github.com/SnakeskinTpl/Snakeskin).
 [![NPM version](http://img.shields.io/npm/v/snakeskin-cli.svg?style=flat)](http://badge.fury.io/js/snakeskin-cli)
 [![Build Status](http://img.shields.io/travis/SnakeskinTpl/snakeskin-cli.svg?style=flat&branch=master)](https://travis-ci.org/SnakeskinTpl/snakeskin-cli)
 [![NPM dependencies](http://img.shields.io/david/SnakeskinTpl/snakeskin-cli.svg?style=flat)](https://david-dm.org/SnakeskinTpl/snakeskin-cli)
-[![NPM devDependencies](http://img.shields.io/david/dev/SnakeskinTpl/snakeskin-cli.svg?style=flat)](https://david-dm.org/SnakeskinTpl/snakeskin-cli#info=devDependencies&view=table)
+[![NPM devDependencies](http://img.shields.io/david/dev/SnakeskinTpl/snakeskin-cli.svg?style=flat)](https://david-dm.org/SnakeskinTpl/snakeskin-cli?type=dev)
 
 ## Install
 

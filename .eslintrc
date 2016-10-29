@@ -1,4 +1,9 @@
 {
+  "parser": "babel-eslint",
+  "parserOptions": {
+    "sourceType": "module"
+  },
+
   "rules": {
     /* [Possible Errors] */
     "comma-dangle": ["error", "only-multiline"],
@@ -64,6 +69,7 @@
     "no-shadow-restricted-names": ["error"],
     "no-undef-init": ["error"],
     "no-unused-vars": ["error", {"vars": "all", "args": "none", "varsIgnorePattern": "[iI]gnored?"}],
+    "no-use-before-define": ["error", {"functions": false}],
 
     /* [Node.js and CommonJS] */
     "no-new-require": ["error"],
@@ -102,6 +108,29 @@
     "space-in-parens": ["error"],
     "space-infix-ops": ["error"],
     "space-unary-ops": ["error"],
-    "unicode-bom": ["error"]
+    "unicode-bom": ["error"],
+
+    /* [ECMAScript 6] */
+    "arrow-body-style": ["error"],
+    "arrow-spacing": ["error"],
+    "constructor-super": ["error"],
+    "generator-star-spacing": ["error", {"before": true, "after": false}],
+    "no-class-assign": ["error"],
+    "no-const-assign": ["error"],
+    "no-dupe-class-members": ["error"],
+    "no-this-before-super": ["error"],
+    "no-useless-computed-key": ["error"],
+    "no-useless-constructor": ["error"],
+    "no-useless-rename": ["error"],
+    "no-var": ["error"],
+    "object-shorthand": ["error"],
+    "prefer-arrow-callback": ["error", {"allowNamedFunctions": true}],
+    "prefer-const": ["error"],
+    "prefer-spread": ["error"],
+    "prefer-template": ["error"],
+    "require-yield": ["error"],
+    "rest-spread-spacing": ["error"],
+    "template-curly-spacing": ["error"],
+    "yield-star-spacing": ["error", "after"]
   }
 }

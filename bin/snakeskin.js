@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+'use strict';
+
 /*!
  * Snakeskin CLI
  * https://github.com/SnakeskinTpl/snakeskin-cli
@@ -8,18 +10,17 @@
  * https://github.com/SnakeskinTpl/snakeskin-cli/blob/master/LICENSE
  */
 
-require('core-js');
 global.Snakeskin = require('snakeskin');
 
-var
+const
 	$C = require('collection.js/compiled');
 
-var
+const
 	program = require('commander'),
 	beautify = require('js-beautify'),
 	monocle = require('monocle')();
 
-var
+const
 	path = require('path'),
 	fs = require('fs'),
 	mkdirp = require('mkdirp'),
@@ -49,15 +50,17 @@ program
 
 	.parse(process.argv);
 
-var ssrc = path.join(process.cwd(), '.snakeskinrc');
+const
+	ssrc = path.join(process.cwd(), '.snakeskinrc');
+
 if (!program['params'] && exists(ssrc)) {
 	program['params'] = ssrc;
 }
 
-var
+const
 	p = Object.assign({eol: '\n'}, Snakeskin.toObj(program['params']), {debug: {}});
 
-var
+const
 	prettyPrint = p.prettyPrint,
 	language = p.language,
 	words = p.words;
@@ -66,32 +69,31 @@ if (typeof words === 'string') {
 	p.words = {};
 }
 
-var
+const
 	eol = p.eol,
 	nRgxp = /\r?\n|\r/g;
 
-var
+const
 	include = {},
-	fMap = {};
+	fMap = {},
+	calls = {};
 
-var
+const
 	jsx = program['jsx'],
 	adapter = program['adapter'],
 	adapterOptions = Snakeskin.toObj(program['adapterOptions']) || {};
 
-var
+const
 	exec = program['exec'],
 	tplData = program['data'],
 	mainTpl = program['tpl'],
-	watch = program['watch'];
-
-var
+	watch = program['watch'],
 	args = program['args'],
-	input;
-
-var
-	file = program['source'],
 	out = program['output'];
+
+let
+	file = program['source'],
+	input;
 
 if (!file && args.length) {
 	input = args.join(' ');
@@ -102,20 +104,17 @@ if (!file && args.length) {
 	}
 }
 
-var
-	calls = {},
-	root = '';
-
+let root = '';
 function action(data, file) {
 	console.time('Time');
 	data = String(data);
 	file = file || program['file'] || '';
 
-	var
+	const
 		tpls = {},
-		fileName = '',
-		info = {file: file};
+		info = {file};
 
+	let fileName = '';
 	if (file) {
 		fileName = path.basename(file, path.extname(file));
 	}
@@ -135,18 +134,18 @@ function action(data, file) {
 	}
 
 	function load(val) {
-		var tmp = val = pathTpl(val);
+		let tmp = val = pathTpl(val);
 		val = path.normalize(path.resolve(val));
 
 		if (fileName && exists(val) && fs.statSync(val).isDirectory()) {
-			tmp = path.join(val, fileName) + '.js';
+			tmp = `${path.join(val, fileName)}.js`;
 
 			if (!exists(tmp)) {
 				tmp += 'on';
 			}
 		}
 
-		return Snakeskin.toObj(tmp, null, function (src) {
+		return Snakeskin.toObj(tmp, null, (src) => {
 			if (file) {
 				include[src] = include[src] || {};
 				include[src][file] = true;
@@ -169,15 +168,17 @@ function action(data, file) {
 	function success() {
 		line();
 		console.log(new Date().toString());
-		console.log('File "' + url(file) + '" was successfully compiled -> "' + url(outFile) + '".');
+		/* eslint-disable no-use-before-define */
+		console.log(`File "${url(file)}" was successfully compiled -> "${url(outFile)}".`);
+		/* eslint-enable no-use-before-define */
 		console.timeEnd('Time');
 		line();
 	}
 
-	var
-		outFile = out,
+	const
 		execTpl = tplData || mainTpl || exec;
 
+	let outFile = out;
 	if (outFile) {
 		outFile = path.normalize(path.resolve(pathTpl(outFile)));
 		testDir(outFile);
@@ -190,7 +191,7 @@ function action(data, file) {
 		}
 
 		if (file && (!words || exists(words)) && p.cache !== false) {
-			var includes = Snakeskin.check(
+			const includes = Snakeskin.check(
 				file,
 				outFile,
 				Snakeskin.compile(null, Object.assign({}, p, {getCacheKey: true})),
@@ -203,7 +204,7 @@ function action(data, file) {
 				include[file] = include[file] || {};
 				include[file][file] = true;
 
-				$C(includes).forEach(function (key) {
+				$C(includes).forEach((key) => {
 					include[key] = include[key] || {};
 					include[key][file] = true;
 				});
@@ -216,7 +217,7 @@ function action(data, file) {
 	function cb(err, res) {
 		if (err) {
 			console.log(new Date().toString());
-			console.error('Error: ' + err.message);
+			console.error(`Error: ${err.message}`);
 			res = false;
 			if (!watch) {
 				process.exit(1);
@@ -224,20 +225,24 @@ function action(data, file) {
 		}
 
 		if (typeof res === 'string') {
+			/* eslint-disable no-use-before-define */
 			if (toConsole) {
+			/* eslint-enable no-use-before-define */
+
 				console.log(res);
 
 			} else {
 				fs.writeFileSync(outFile, res);
 				success();
 
-				var tmp = p.debug.files;
+				const
+					tmp = p.debug.files;
 
 				include[file] = include[file] || {};
 				include[file][file] = true;
 
 				if (tmp) {
-					$C(tmp).forEach(function (el, key) {
+					$C(tmp).forEach((el, key) => {
 						include[key] = include[key] || {};
 						include[key][file] = true;
 					});
@@ -246,17 +251,18 @@ function action(data, file) {
 		}
 	}
 
-	var toConsole = input && !program['output'] || !outFile;
+	const
+		toConsole = input && !program['output'] || !outFile;
 
 	try {
-		var dataObj;
+		let dataObj;
 		if (tplData && tplData !== true) {
 			p.data = dataObj = load(tplData);
 		}
 
 		if (jsx || adapter) {
-			return require(jsx ? 'ss2react' : adapter).adapter(data, Object.assign({adapterOptions: adapterOptions}, p), info).then(
-				function (res) {
+			return require(jsx ? 'ss2react' : adapter).adapter(data, Object.assign({adapterOptions}, p), info).then(
+				(res) => {
 					cb(null, res);
 				},
 
@@ -264,10 +270,12 @@ function action(data, file) {
 			);
 		}
 
-		var res = Snakeskin.compile(data, p, info);
+		let
+			res = Snakeskin.compile(data, p, info);
 
 		if (res && execTpl) {
-			var tpl = Snakeskin.getMainTpl(tpls, fileName, mainTpl);
+			const
+				tpl = Snakeskin.getMainTpl(tpls, fileName, mainTpl);
 
 			if (!tpl) {
 				console.log(new Date().toString());
@@ -280,8 +288,9 @@ function action(data, file) {
 
 			} else {
 				return Snakeskin.execTpl(tpl, dataObj).then(
-					function (res) {
-						var cache = res;
+					(res) => {
+						const
+							cache = res;
 
 						if (prettyPrint) {
 							if (toConsole) {
@@ -324,23 +333,23 @@ function testDir(src) {
 }
 
 if (!file && input == null) {
-	var buf = '';
+	let buf = '';
 
-	var
+	const
 		stdin = process.stdin,
 		stdout = process.stdout;
 
 	stdin.setEncoding('utf8');
-	stdin.on('data', function (chunk) {
+	stdin.on('data', (chunk) => {
 		buf += chunk;
 	});
 
-	stdin.on('end', function () {
+	stdin.on('end', () => {
 		action(buf);
 		end();
 	}).resume();
 
-	process.on('SIGINT', function () {
+	process.on('SIGINT', () => {
 		stdout.write(eol);
 		stdin.emit('end');
 		stdout.write(eol);
@@ -351,15 +360,16 @@ if (!file && input == null) {
 	if (file) {
 		file = path.normalize(path.resolve(file));
 
-		var
+		const
 			isDir = fs.statSync(file).isDirectory(),
 			mask = program['mask'] && new RegExp(program['mask']);
 
-		var watchDir = function () {
+		const watchDir = () => {
 			monocle.watchDirectory({
 				root: file,
-				listener: function (f) {
-					var src = f.fullPath;
+				listener(f) {
+					const
+						src = f.fullPath;
 
 					if (
 						!fMap[src] && exists(src) && !f.stat.isDirectory() &&
@@ -369,32 +379,35 @@ if (!file && input == null) {
 						monocle.unwatchAll();
 						console.log(file);
 						action(fs.readFileSync(src), src, file);
+						/* eslint-disable no-use-before-define */
 						watchFiles();
+						/* eslint-enable no-use-before-define */
 					}
 				}
 			});
 		};
 
-		var watchFiles = function watchFiles() {
-			var files = [];
+		const watchFiles = function watchFiles() {
+			const
+				files = [];
 
-			$C(include).forEach(function (el, key) {
+			$C(include).forEach((el, key) => {
 				fMap[key] = true;
 				files.push(key);
 			});
 
 			monocle.watchFiles({
-				files: files,
-				listener: function (f) {
-					var
+				files,
+				listener(f) {
+					const
 						src = f.fullPath,
 						files = include[src];
 
 					if (files && !calls[src]) {
-						calls[src] = setTimeout(function () {
+						calls[src] = setTimeout(() => {
 							monocle.unwatchAll();
 
-							$C(files).forEach(function (el, key) {
+							$C(files).forEach((el, key) => {
 								if (!mask || mask.test(key)) {
 									if (exists(key)) {
 										action(fs.readFileSync(key), key);
@@ -421,9 +434,10 @@ if (!file && input == null) {
 		};
 
 		if (fs.statSync(file).isDirectory()) {
-			var renderDir = function (dir) {
-				$C(fs.readdirSync(dir)).forEach(function (el) {
-					var src = path.join(dir, el);
+			const renderDir = (dir) => {
+				$C(fs.readdirSync(dir)).forEach((el) => {
+					const
+						src = path.join(dir, el);
 
 					if (fs.statSync(src).isDirectory()) {
 						renderDir(src);
