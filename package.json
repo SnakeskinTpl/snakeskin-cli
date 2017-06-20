@@ -33,14 +33,12 @@
   "dependencies": {
     "collection.js": "^6.0.0-beta.6",
     "commander": "^2.5.0",
-    "exists-sync": "0.0.3",
     "js-beautify": "^1.5.4",
     "mkdirp": "^0.5.1",
     "monocle": "^1.1.51",
     "snakeskin": "^7.1.9"
   },
   "devDependencies": {
-    "babel-eslint": "^7.0.0",
-    "eslint": "^3.0.0"
+    "eslint": "^4.0.0"
   }
 }

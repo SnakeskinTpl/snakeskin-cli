@@ -21,10 +21,9 @@ const
 	monocle = require('monocle')();
 
 const
-	path = require('path'),
 	fs = require('fs'),
-	mkdirp = require('mkdirp'),
-	exists = require('exists-sync');
+	path = require('path'),
+	mkdirp = require('mkdirp');
 
 program
 	.version(Snakeskin.VERSION.join('.'))
@@ -53,7 +52,7 @@ program
 const
 	ssrc = path.join(process.cwd(), '.snakeskinrc');
 
-if (!program['params'] && exists(ssrc)) {
+if (!program['params'] && fs.existsSync(ssrc)) {
 	program['params'] = ssrc;
 }
 
@@ -98,7 +97,7 @@ let
 if (!file && args.length) {
 	input = args.join(' ');
 
-	if (exists(input)) {
+	if (fs.existsSync(input)) {
 		file = input;
 		input = false;
 	}
@@ -137,10 +136,10 @@ function action(data, file) {
 		let tmp = val = pathTpl(val);
 		val = path.normalize(path.resolve(val));
 
-		if (fileName && exists(val) && fs.statSync(val).isDirectory()) {
+		if (fileName && fs.existsSync(val) && fs.statSync(val).isDirectory()) {
 			tmp = `${path.join(val, fileName)}.js`;
 
-			if (!exists(tmp)) {
+			if (!fs.existsSync(tmp)) {
 				tmp += 'on';
 			}
 		}
@@ -183,14 +182,14 @@ function action(data, file) {
 		outFile = path.normalize(path.resolve(pathTpl(outFile)));
 		testDir(outFile);
 
-		if (exists(outFile) && fs.statSync(outFile).isDirectory()) {
+		if (fs.existsSync(outFile) && fs.statSync(outFile).isDirectory()) {
 			outFile = path.join(outFile, path.relative(root, path.dirname(file)), fileName) +
 				(program['extname'] || (execTpl ? '.html' : '.js'));
 
 			testDir(outFile);
 		}
 
-		if (file && (!words || exists(words)) && p.cache !== false) {
+		if (file && (!words || fs.existsSync(words)) && p.cache !== false) {
 			const includes = Snakeskin.check(
 				file,
 				outFile,
@@ -372,7 +371,7 @@ if (!file && input == null) {
 						src = f.fullPath;
 
 					if (
-						!fMap[src] && exists(src) && !f.stat.isDirectory() &&
+						!fMap[src] && fs.existsSync(src) && !f.stat.isDirectory() &&
 						(mask ? mask.test(src) : path.extname(src) === '.ss')
 
 					) {
@@ -409,7 +408,7 @@ if (!file && input == null) {
 
 							$C(files).forEach((el, key) => {
 								if (!mask || mask.test(key)) {
-									if (exists(key)) {
+									if (fs.existsSync(key)) {
 										action(fs.readFileSync(key), key);
 
 									} else {
