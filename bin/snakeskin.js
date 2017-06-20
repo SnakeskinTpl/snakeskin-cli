@@ -50,10 +50,10 @@ program
 	.parse(process.argv);
 
 const
-	ssrc = path.join(process.cwd(), '.snakeskinrc');
+	src = path.join(process.cwd(), '.snakeskinrc');
 
-if (!program['params'] && fs.existsSync(ssrc)) {
-	program['params'] = ssrc;
+if (!program['params'] && fs.existsSync(src)) {
+	program['params'] = src;
 }
 
 const
