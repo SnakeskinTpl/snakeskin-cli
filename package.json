@@ -31,14 +31,14 @@
     "snakeskin"
   ],
   "dependencies": {
-    "collection.js": "^6.0.0-beta.6",
-    "commander": "^2.5.0",
-    "js-beautify": "^1.5.4",
+    "collection.js": "^6.7.3",
+    "commander": "^2.20.0",
+    "js-beautify": "^1.10.0",
     "mkdirp": "^0.5.1",
     "monocle": "^1.1.51",
-    "snakeskin": "^7.1.9"
+    "snakeskin": "^7.5.1"
   },
   "devDependencies": {
-    "eslint": "^4.0.0"
+    "eslint": "^5.16.0"
   }
 }
